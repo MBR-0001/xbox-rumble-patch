@@ -1,0 +1,71 @@
+From: Siarhei Vishniakou <svv@google.com>
+To: Jiri Kosina <jikos@kernel.org>,
+	Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Siarhei Vishniakou <svv@google.com>
+Subject: [PATCH] Add rumble support to latest xbox controllers
+Date: Thu, 20 Oct 2022 09:14:01 -0700	[thread overview]
+Message-ID: <20221020161401.941927-1-svv@google.com> (raw)
+
+Currently, rumble is only supported via bluetooth on a single xbox
+controller, called 'model 1708'. On the back of the device, it's named
+'wireless controller for xbox one'. However, in 2021, Microsoft released
+a firmware update for this controller. As part of this update, the HID
+descriptor of the device changed. The product ID was also changed from
+0x02fd to 0x0b20. On this controller, rumble was supported via
+hid-microsoft, which matched against the old product id (0x02fd). As a
+result, the firmware update broke rumble support on this controller.
+
+The hid-microsoft driver actually supports rumble on the new firmware,
+as well. So simply adding new product id is sufficient to bring back
+this support.
+
+After discussing further with the xbox team, it was pointed out that
+other xbox controllers, such as xbox elite, should also be possible to
+support in a similar way. However, I could only verify this on 2
+controllers so far.
+
+In this patch, add rumble support for the following 2 controllers:
+1. 'wireless controller for xbox one', model 1708, after applying the
+   most recent firmware update as of 2022-10-20.
+2. 'xbox wireless controller', model 1914. This is also sometimes
+   referred to as 'xbox series S|X'.
+
+I verified rumble support on both bluetooth and usb.
+
+Signed-off-by: Siarhei Vishniakou <svv@google.com>
+---
+ drivers/hid/hid-ids.h       | 2 ++
+ drivers/hid/hid-microsoft.c | 4 ++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index da86565f04d4..e9c7eae849b6 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -914,6 +914,8 @@
+ #define USB_DEVICE_ID_MS_POWER_COVER     0x07da
+ #define USB_DEVICE_ID_MS_SURFACE3_COVER		0x07de
+ #define USB_DEVICE_ID_MS_XBOX_ONE_S_CONTROLLER	0x02fd
++#define USB_DEVICE_ID_MS_XBOX_ONE_S_2021_FIRMWARE 0x0b20
++#define USB_DEVICE_ID_MS_XBOX_WIRELESS_CONTROLLER 0x0b13
+ #define USB_DEVICE_ID_MS_PIXART_MOUSE    0x00cb
+ #define USB_DEVICE_ID_8BITDO_SN30_PRO_PLUS      0x02e0
+ 
+diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+index 071fd093a5f4..2973e91fc7a1 100644
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -448,6 +448,10 @@ static const struct hid_device_id ms_devices[] = {
+ 		.driver_data = MS_SURFACE_DIAL },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_XBOX_ONE_S_CONTROLLER),
+ 		.driver_data = MS_QUIRK_FF },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_XBOX_ONE_S_2021_FIRMWARE),
++		.driver_data = MS_QUIRK_FF },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_XBOX_WIRELESS_CONTROLLER),
++		.driver_data = MS_QUIRK_FF },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_8BITDO_SN30_PRO_PLUS),
+ 		.driver_data = MS_QUIRK_FF },
+ 	{ }
+-- 
+2.38.0.135.g90850a2211-goog
